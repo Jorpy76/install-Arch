@@ -1,79 +1,39 @@
 #!/bin/bash
 
+# Script para instalar y configurar bspwm, sxhkd, polybar y otras herramientas en Arch Linux
+set -e  # Detener el script si ocurre un error
 
-echo "++++++++++++++++++++++++++++++++++++++"
-echo " "
-echo "     Comienzo instalación paquetes"
-echo " "
-echo "            Jorge-Bspm                "
-echo "++++++++++++++++++++++++++++++++++++++"
-sleep 2
+echo "Iniciando la instalación..."
 
+# Verificar si el usuario tiene privilegios de root
+if [ "$EUID" -ne 0 ]; then
+    echo "Por favor, ejecuta este script con sudo o como root."
+    exit 1
+fi
 
+# Actualizar sistema
+pacman -Syu --noconfirm
 
-# Actualizar los repositorios y el sistema
+# Instalar paquetes
+PAQUETES=(
+    bspwm sxhkd polybar rofi nitrogen pcmanfm
+    ttf-hack-nerd ttf-jetbrains-mono-nerd brightnessctl
+    mpv ffmpeg xorg-server xorg-xinit feh picom git
+)
 
-# Solicita la contraseña de superusuario
-sudo -S echo "Actualizando los paquetes..."
-sudo pacman -Syu
+pacman -S --noconfirm "${PAQUETES[@]}"
 
-sleep 2
+# Crear configuraciones básicas
+mkdir -p ~/.config/{bspwm,sxhkd,polybar}
+cp /usr/share/doc/bspwm/examples/bspwmrc ~/.config/bspwm/bspwmrc
+cp /usr/share/doc/bspwm/examples/sxhkdrc ~/.config/sxhkd/sxhkdrc
+chmod +x ~/.config/bspwm/bspwmrc ~/.config/sxhkd/sxhkdrc
 
-# Instalar base-devel, bspwm, sxhkd, polybar, rofi, pcmanfm, lxappearance y nitrogen
-sudo pacman -S base-devel git wget bspwm sxhkd polybar rofi pcmanfm lxappearance nitrogen moc mpv alacritty fish
-
-sleep 2
-
-
-
-
-echo " Instalando yay"
-sleep 2 
-# Clonar el repositorio de yay en el directorio temporal
-cd /tmp
-git clone https://aur.archlinux.org/yay.git
-
-# Cambiar al directorio del repositorio clonado
-cd yay
-
-# Compilar e instalar yay
-makepkg -si
-
-sleep 2
-
-echo " Instalando ly"
-sleep 2
-
-# Aur ly
-exit 
- yay -S ly
- systemctl enable ly.service
-
-# Crea el directorio y clona el repositorio de configuración de BSPWM desde GitHub
-
-mkdir git_things
-cd git_things
-git clone https://github.com/Jorpy76/config_archlinux_Bspwm.git
-
-
-# Copiando los config
-
-echo " Instalando los configs"
-sleep 2
-
-sudo -S echo "Copiando los archivos .config"
-
-cp -R git_things/* ./config/
-
-sleep 2
-
-# Reiniciar sistema
-echo " Reiniciando sistema"
-sleep2 
-
-sudo pacman -S pkgfile ttf dejavu powerline-fonts inetutils
-nano .bashrc
-echo "exec fish" >> ~/.bashrc
-
-sudo reboot
-
+# Configurar .xprofile para ly
+echo "Configurando ~/.xprofile para iniciar bspwm..."
+cat > ~/.xprofile << EOF
+#!/bin/bash
+sxhkd &
+exec bspwm
+EOF
+chmod +x ~/.xprofile
